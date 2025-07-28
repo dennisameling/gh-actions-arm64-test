@@ -35,7 +35,7 @@ jobs:
     - name: Check MSVC Host and Target Availability
       run: |
         echo "Checking MSVC host and target combinations..."
-        echo "="*50
+        echo ("=" * 50)
         
         # Get Visual Studio installation path
         $vsPath = vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
@@ -54,20 +54,20 @@ jobs:
                 if (Test-Path $binPath) {
                     echo ""
                     echo "Available Host Architectures:"
-                    echo "-"*30
+                    echo ("-" * 30)
                     
                     $hosts = Get-ChildItem $binPath -Directory | Where-Object { $_.Name -like "Host*" }
                     $hostARM64Found = $false
                     
-                    foreach ($host in $hosts) {
-                        echo "[DIR] $($host.Name)"
-                        if ($host.Name -eq "HostARM64") {
+                    foreach ($hostDir in $hosts) {
+                        echo "[DIR] $($hostDir.Name)"
+                        if ($hostDir.Name -eq "HostARM64") {
                             $hostARM64Found = $true
                             echo "   [OK] HostARM64 FOUND!"
                         }
                         
                         # List available targets for this host
-                        $targets = Get-ChildItem $host.FullName -Directory
+                        $targets = Get-ChildItem $hostDir.FullName -Directory
                         if ($targets.Count -gt 0) {
                             echo "   Targets: $($targets.Name -join ', ')"
                             # Check if specific tools exist
@@ -89,7 +89,7 @@ jobs:
                         echo ""
                     }
                     
-                    echo "="*50
+                    echo ("=" * 50)
                     if ($hostARM64Found) {
                         echo "[SUCCESS] HostARM64 is available!"
                     } else {
