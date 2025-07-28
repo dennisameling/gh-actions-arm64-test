@@ -1,0 +1,108 @@
+name: Visual Studio Workflow
+
+on:
+  push:
+    branches: [ "*" ]
+
+jobs:
+  build:
+    runs-on: windows-11-arm
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Output PATH
+      run: |
+        echo "Full PATH:"
+        echo $env:PATH
+        echo "---"
+        echo "PATH entries (one per line):"
+        $env:PATH -split ';' | ForEach-Object { echo $_ }
+      shell: powershell
+    
+    - name: Setup Visual Studio Environment
+      uses: microsoft/setup-msbuild@v2
+    
+    - name: Display Visual Studio Information
+      run: |
+        echo "MSBuild version:"
+        msbuild -version
+        echo "---"
+        echo "Visual Studio components:"
+        vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+      shell: powershell
+    
+    - name: Check MSVC Host and Target Availability
+      run: |
+        echo "Checking MSVC host and target combinations..."
+        echo "="*50
+        
+        # Get Visual Studio installation path
+        $vsPath = vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+        echo "Visual Studio Path: $vsPath"
+        
+        # Find MSVC tools directory
+        $vcToolsPath = "$vsPath\VC\Tools\MSVC"
+        if (Test-Path $vcToolsPath) {
+            $msvcVersions = Get-ChildItem $vcToolsPath | Sort-Object Name -Descending
+            if ($msvcVersions.Count -gt 0) {
+                $latestMsvc = $msvcVersions[0].FullName
+                echo "Latest MSVC Version: $($msvcVersions[0].Name)"
+                echo "MSVC Tools Path: $latestMsvc"
+                
+                $binPath = "$latestMsvc\bin"
+                if (Test-Path $binPath) {
+                    echo ""
+                    echo "Available Host Architectures:"
+                    echo "-"*30
+                    
+                    $hosts = Get-ChildItem $binPath -Directory | Where-Object { $_.Name -like "Host*" }
+                    $hostARM64Found = $false
+                    
+                    foreach ($host in $hosts) {
+                        echo "📁 $($host.Name)"
+                        if ($host.Name -eq "HostARM64") {
+                            $hostARM64Found = $true
+                            echo "   ✅ HostARM64 FOUND!"
+                        }
+                        
+                        # List available targets for this host
+                        $targets = Get-ChildItem $host.FullName -Directory
+                        if ($targets.Count -gt 0) {
+                            echo "   Targets: $($targets.Name -join ', ')"
+                            # Check if specific tools exist
+                            foreach ($target in $targets) {
+                                $libExe = Join-Path $target.FullName "lib.exe"
+                                $clExe = Join-Path $target.FullName "cl.exe"
+                                $linkExe = Join-Path $target.FullName "link.exe"
+                                
+                                $tools = @()
+                                if (Test-Path $libExe) { $tools += "lib.exe" }
+                                if (Test-Path $clExe) { $tools += "cl.exe" }
+                                if (Test-Path $linkExe) { $tools += "link.exe" }
+                                
+                                if ($tools.Count -gt 0) {
+                                    echo "     → $($target.Name): $($tools -join ', ')"
+                                }
+                            }
+                        }
+                        echo ""
+                    }
+                    
+                    echo "="*50
+                    if ($hostARM64Found) {
+                        echo "🎉 SUCCESS: HostARM64 is available!"
+                    } else {
+                        echo "❌ HostARM64 not found in this MSVC installation"
+                    }
+                    echo "Total host architectures found: $($hosts.Count)"
+                } else {
+                    echo "❌ Bin directory not found: $binPath"
+                }
+            } else {
+                echo "❌ No MSVC versions found in $vcToolsPath"
+            }
+        } else {
+            echo "❌ VC Tools path not found: $vcToolsPath"
+        }
+      shell: powershell
