@@ -60,10 +60,10 @@ jobs:
                     $hostARM64Found = $false
                     
                     foreach ($host in $hosts) {
-                        echo "📁 $($host.Name)"
+                        echo "[DIR] $($host.Name)"
                         if ($host.Name -eq "HostARM64") {
                             $hostARM64Found = $true
-                            echo "   ✅ HostARM64 FOUND!"
+                            echo "   [OK] HostARM64 FOUND!"
                         }
                         
                         # List available targets for this host
@@ -82,7 +82,7 @@ jobs:
                                 if (Test-Path $linkExe) { $tools += "link.exe" }
                                 
                                 if ($tools.Count -gt 0) {
-                                    echo "     → $($target.Name): $($tools -join ', ')"
+                                    echo "     -> $($target.Name): $($tools -join ', ')"
                                 }
                             }
                         }
@@ -91,18 +91,18 @@ jobs:
                     
                     echo "="*50
                     if ($hostARM64Found) {
-                        echo "🎉 SUCCESS: HostARM64 is available!"
+                        echo "[SUCCESS] HostARM64 is available!"
                     } else {
-                        echo "❌ HostARM64 not found in this MSVC installation"
+                        echo "[ERROR] HostARM64 not found in this MSVC installation"
                     }
                     echo "Total host architectures found: $($hosts.Count)"
                 } else {
-                    echo "❌ Bin directory not found: $binPath"
+                    echo "[ERROR] Bin directory not found: $binPath"
                 }
             } else {
-                echo "❌ No MSVC versions found in $vcToolsPath"
+                echo "[ERROR] No MSVC versions found in $vcToolsPath"
             }
         } else {
-            echo "❌ VC Tools path not found: $vcToolsPath"
+            echo "[ERROR] VC Tools path not found: $vcToolsPath"
         }
       shell: powershell
